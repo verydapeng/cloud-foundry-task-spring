@@ -112,4 +112,4 @@ Now it should work, sample output:
 
 = Review 
 
-```cf tasks demo``` to see the history 
+Use command ```cf tasks demo``` to see the history 

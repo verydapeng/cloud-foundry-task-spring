@@ -25,7 +25,7 @@ cf start demo
 curl demo-XXXX-YYYY.cfapps.io/contacts
 ----
 
-This will show you error, because the db is empty 
+Expecting to see the error, because the db is not initialized 
 
 ```
 $ curl demo-XXXX-YYYY.cfapps.io/contacts
@@ -34,7 +34,7 @@ $ curl demo-XXXX-YYYY.cfapps.io/contacts
 
 = Run task
 
-open a new terminal to show ```cf logs demo```
+Open a new terminal to run ```cf logs demo```
 
 Now run the task
 
@@ -44,7 +44,7 @@ cf run-task demo '.java-buildpack/open_jdk_jre/bin/java \
     -Dspring.jpa.hibernate.ddl-auto=update \
     -Dspring.profiles.active=cloud,reset \
     -Dspring.main.web-environment=false \
-    -cp . org.springframework.boot.loader.JarLauncher
+    -cp . org.springframework.boot.loader.JarLauncher'
 ----
 
 

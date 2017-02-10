@@ -1,0 +1,115 @@
+= General Idea 
+
+1. use spring data rest + mysql(cleardb)
+2. the db schema/data is not initialized
+3. when access the app for the first time, it will crash (due to step 2)
+4. ```cf run-task``` to the rescue! Encapsulate the ```task``` in ```ApplicationRunner``` 
+    bean under a specific profile (eg. reset). We also want to make use 
+    of the services bound to the app (cleardb). 12 factor: "one off admin task"
+
+
+= Prep
+[source,bash]
+----
+mvn clean package 
+cf push demo -p target/task-demo-0.0.1-SNAPSHOT.jar --random-route --no-start
+cf create-service cleardb spark mysql1
+cf bind-service demo mysql1
+cf start demo 
+----
+
+= Test 
+
+[source,bash]
+----
+curl demo-XXXX-YYYY.cfapps.io/contacts
+----
+
+This will show you error, because the db is empty 
+
+```
+$ curl demo-XXXX-YYYY.cfapps.io/contacts
+{"timestamp":1486745570429,"status":500,"error":"Internal Server Error","exception":"org.springframework.dao.InvalidDataAccessResourceUsageException","message":"could not extract ResultSet; SQL [n/a]; nested exception is org.hibernate.exception.SQLGrammarException: could not extract ResultSet","path":"/contacts"}
+```
+
+= Run task
+
+open a new terminal to show ```cf logs demo```
+
+Now run the task
+
+[source]
+----
+cf run-task demo '.java-buildpack/open_jdk_jre/bin/java \
+    -Dspring.jpa.hibernate.ddl-auto=update \
+    -Dspring.profiles.active=cloud,reset \
+    -Dspring.main.web-environment=false \
+    -cp . org.springframework.boot.loader.JarLauncher
+----
+
+
+= Test Again 
+
+[source,bash]
+----
+curl demo-XXXX-YYYY.cfapps.io/contacts
+----
+
+Now it should work, sample output:
+
+[source,json]
+----
+{
+  "_embedded" : {
+    "contacts" : [ {
+      "name" : "Alice",
+      "_links" : {
+        "self" : {
+          "href" : "http://demo-spathulate-grainfield.cfapps.io/contacts/2"
+        },
+        "contact" : {
+          "href" : "http://demo-spathulate-grainfield.cfapps.io/contacts/2"
+        }
+      }
+    }, {
+      "name" : "Bob",
+      "_links" : {
+        "self" : {
+          "href" : "http://demo-spathulate-grainfield.cfapps.io/contacts/12"
+        },
+        "contact" : {
+          "href" : "http://demo-spathulate-grainfield.cfapps.io/contacts/12"
+        }
+      }
+    }, {
+      "name" : "Eve",
+      "_links" : {
+        "self" : {
+          "href" : "http://demo-spathulate-grainfield.cfapps.io/contacts/22"
+        },
+        "contact" : {
+          "href" : "http://demo-spathulate-grainfield.cfapps.io/contacts/22"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://demo-spathulate-grainfield.cfapps.io/contacts"
+    },
+    "profile" : {
+      "href" : "http://demo-spathulate-grainfield.cfapps.io/profile/contacts"
+    }
+  },
+  "page" : {
+    "size" : 20,
+    "totalElements" : 3,
+    "totalPages" : 1,
+    "number" : 0
+  }
+}
+----
+
+= Review 
+
+```cf tasks demo``` to see the history 
